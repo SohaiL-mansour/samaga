@@ -1,0 +1,2007 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سماجه - لعبة الركض والأسئلة 3D</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@700;900&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&amp;family=Marhey:wght@700&amp;display=swap" rel="stylesheet">
+  <style>
+    * {
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><text x="0" y="30" font-size="32">🤡</text></svg>'), auto;
+    }
+    
+    button, .menu-button, .difficulty-button, .game-button, .profile-button {
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><text x="0" y="30" font-size="32">🤙</text></svg>'), pointer !important;
+    }
+    
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Tajawal', 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    
+    html, body {
+      height: 100%;
+    }
+    
+    .game-wrapper {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: transparent;
+    }
+    
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    
+    .ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    
+    .menu-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      cursor: pointer;
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .menu-button:hover {
+      transform: scale(1.1);
+      background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+    }
+    
+    .menu-button span {
+      width: 30px;
+      height: 4px;
+      background: #667eea;
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+    
+    .menu-button:hover span {
+      background: white;
+    }
+    
+    .sound-button {
+      position: absolute;
+      top: 20px;
+      left: 80px;
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      cursor: pointer;
+      pointer-events: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 28px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .sound-button-fixed {
+      position: fixed;
+      top: 20px;
+      left: 80px;
+      z-index: 2001;
+    }
+    
+    .sound-button:hover {
+      transform: scale(1.1);
+      background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+    }
+    
+    .sound-button::after {
+      content: '';
+      position: absolute;
+      width: 3px;
+      height: 60px;
+      background: red;
+      transform: rotate(-45deg);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .sound-button.muted::after {
+      opacity: 1;
+    }
+    
+    .menu-panel {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      pointer-events: auto;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.3s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    
+    .menu-panel.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    
+    .menu-item {
+      padding: 15px 25px;
+      margin: 5px 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+      width: 100%;
+      text-align: center;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .menu-item:hover {
+      transform: translateX(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+    }
+    
+    .score-display {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 15px;
+      font-size: 28px;
+      font-weight: bold;
+      pointer-events: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .question-display {
+      position: absolute;
+      top: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+      padding: 18px 35px;
+      border-radius: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #2c3e50;
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transition: opacity 0.5s, transform 0.5s;
+      pointer-events: auto;
+      max-width: 80%;
+      text-align: center;
+      border: 3px solid rgba(102, 126, 234, 0.5);
+      transform: translateX(-50%) scale(0.9);
+    }
+    
+    .question-display.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+    
+    .checkpoint-animation {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+      color: white;
+      padding: 40px 60px;
+      border-radius: 30px;
+      font-size: 48px;
+      font-weight: 900;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border: 5px solid white;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    .checkpoint-animation.show {
+      animation: checkpointPop 2s ease-out forwards;
+    }
+    
+    @keyframes checkpointPop {
+      0% {
+        transform: translate(-50%, -50%) scale(0) rotate(-10deg);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.2) rotate(5deg);
+        opacity: 1;
+      }
+      70% {
+        transform: translate(-50%, -50%) scale(0.95) rotate(-2deg);
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(0) rotate(0deg);
+        opacity: 0;
+      }
+    }
+    
+    .correct-animation {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 120px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1001;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+    }
+    
+    .correct-animation.show {
+      animation: correctPop 1s ease-out forwards;
+    }
+    
+    @keyframes correctPop {
+      0% {
+        transform: translate(-50%, -50%) scale(0) rotate(-180deg);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.5) rotate(10deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 0;
+      }
+    }
+    
+    .start-screen, .game-over-screen, .difficulty-screen, .profile-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(74, 14, 63, 0.95), rgba(26, 10, 46, 0.95));
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      overflow-y: auto;
+      position: relative;
+    }
+    
+    .logo-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      animation: logoFadeInOut 3s ease-in-out forwards;
+    }
+    
+    .logo-screen.company {
+      animation-delay: 0s;
+    }
+    
+    .logo-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    @keyframes logoFadeInOut {
+      0% {
+        opacity: 0;
+        display: flex;
+      }
+      20% {
+        opacity: 1;
+      }
+      80% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        display: none;
+      }
+    }
+    
+    .start-screen {
+      background: none;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: startScreenFadeIn 1s ease-in-out 3.5s forwards;
+    }
+    
+    @keyframes startScreenFadeIn {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+    
+    .start-screen::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('bgw.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 0;
+    }
+    
+    .start-screen::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(0deg, transparent 0%, transparent 45%, rgba(125, 30, 106, 0.15) 50%, transparent 55%, transparent 100%),
+        linear-gradient(0deg, transparent 0%, transparent 45%, rgba(125, 30, 106, 0.15) 50%, transparent 55%, transparent 100%),
+        radial-gradient(ellipse at 50% 70%, rgba(125, 30, 106, 0.3) 0%, transparent 60%),
+        radial-gradient(circle at 30% 40%, rgba(139, 47, 123, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 70% 60%, rgba(139, 47, 123, 0.2) 0%, transparent 40%);
+      background-size: 100% 200px, 100% 300px, 100% 100%, 100% 100%, 100% 100%;
+      background-position: 0 0, 0 100px, center, center, center;
+      animation: gameplayEffect 15s linear infinite, gateAnimation 8s ease-in-out infinite;
+      filter: blur(80px);
+      z-index: 0;
+    }
+    
+    @keyframes gameplayEffect {
+      0% {
+        background-position: 0 0, 0 100px, center, center, center;
+      }
+      100% {
+        background-position: 0 2000px, 0 2100px, center, center, center;
+      }
+    }
+    
+    @keyframes gateAnimation {
+      0%, 100% {
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 0.9;
+      }
+    }
+    
+    .start-screen h1, .game-over-screen h1, .difficulty-screen h1 {
+      color: white;
+      font-size: 100px;
+      margin-bottom: 30px;
+      text-shadow: 5px 5px 15px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 217, 61, 0.8);
+      font-weight: 900;
+      letter-spacing: 12px;
+      animation: titleGlow 3s infinite;
+      font-family: 'Marhey', 'Aref Ruqaa', cursive;
+      z-index: 1;
+      position: relative;
+      transform: rotate(-3deg);
+    }
+    
+    @keyframes titleGlow {
+      0%, 100% { 
+        text-shadow: 5px 5px 15px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 217, 61, 0.8), 0 0 50px rgba(255, 217, 61, 0.5);
+        transform: rotate(-3deg) scale(1);
+      }
+      50% { 
+        text-shadow: 5px 5px 15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(255, 107, 107, 1), 0 0 80px rgba(255, 107, 107, 0.8);
+        transform: rotate(-3deg) scale(1.05);
+      }
+    }
+    
+    .start-screen p, .game-over-screen p {
+      color: white;
+      font-size: 22px;
+      margin-bottom: 40px;
+      text-align: center;
+      max-width: 700px;
+      line-height: 1.8;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      z-index: 1;
+      position: relative;
+    }
+    
+    .developer-credit {
+      color: white;
+      font-size: 14px;
+      margin-top: -20px;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      z-index: 1;
+      position: relative;
+      font-weight: normal;
+    }
+    
+    .game-button {
+      background: linear-gradient(135deg, #ffd93d 0%, #ff6b6b 100%);
+      color: white;
+      border: none;
+      padding: 20px 60px;
+      font-size: 28px;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      border: 3px solid white;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+      margin: 10px;
+      z-index: 1;
+      position: relative;
+    }
+    
+    .game-button:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+      background: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%);
+    }
+    
+    .game-button:active {
+      transform: translateY(-2px);
+    }
+    
+    .difficulty-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 30px;
+      z-index: 1;
+      position: relative;
+    }
+    
+    .difficulty-button {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+      backdrop-filter: blur(10px);
+      color: white;
+      border: 3px solid rgba(255, 255, 255, 0.5);
+      padding: 30px 50px;
+      font-size: 32px;
+      font-weight: bold;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+    
+    .difficulty-button:hover {
+      transform: scale(1.08);
+      border-color: white;
+      background: linear-gradient(135deg, rgba(255, 217, 61, 0.8), rgba(255, 107, 107, 0.8));
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    .final-score {
+      color: #ffd93d;
+      font-size: 48px;
+      margin: 30px 0;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .joke-text {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px 30px;
+      border-radius: 15px;
+      font-size: 24px;
+      color: #ff6b6b;
+      font-weight: bold;
+      margin: 20px 0;
+      border: 3px dashed #ff6b6b;
+      max-width: 80%;
+      text-align: center;
+      animation: jokeShake 0.5s ease-in-out;
+    }
+    
+    .joke-suffix {
+      display: block;
+      color: #ffd93d;
+      font-size: 20px;
+      margin-top: 10px;
+      font-style: italic;
+    }
+    
+    @keyframes jokeShake {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      25% { transform: translateX(-10px) rotate(-2deg); }
+      75% { transform: translateX(10px) rotate(2deg); }
+    }
+    
+    .level-indicator {
+      position: absolute;
+      top: 90px;
+      right: 20px;
+      background: linear-gradient(135deg, rgba(255, 217, 61, 0.25), rgba(255, 107, 107, 0.25));
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 15px;
+      font-size: 20px;
+      font-weight: bold;
+      pointer-events: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .controls-hint {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 15px;
+      font-size: 20px;
+      pointer-events: none;
+      display: flex;
+      gap: 30px;
+      align-items: center;
+    }
+    
+    .key-hint {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    
+    .profile-container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 40px;
+      border-radius: 25px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      z-index: 1;
+      position: relative;
+    }
+    
+    .profile-header {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #667eea;
+      font-size: 48px;
+      font-weight: 900;
+    }
+    
+    .profile-name {
+      text-align: center;
+      color: #764ba2;
+      font-size: 36px;
+      margin-bottom: 30px;
+      font-weight: bold;
+    }
+    
+    .stats-section {
+      margin: 20px 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+      border-radius: 15px;
+    }
+    
+    .stats-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      margin: 5px 0;
+      background: white;
+      border-radius: 10px;
+      font-size: 18px;
+    }
+    
+    .stat-label {
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    
+    .stat-value {
+      color: #ff6b6b;
+      font-weight: bold;
+    }
+    
+    .profile-button {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      pointer-events: auto;
+      font-size: 18px;
+      font-weight: bold;
+      color: #667eea;
+      border: 2px solid #667eea;
+      transition: all 0.3s;
+      z-index: 100;
+    }
+    
+    .profile-button:hover {
+      transform: scale(1.1);
+      background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+      color: white;
+      border-color: white;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="game-wrapper">
+   <div class="logo-screen company"><img src="pulsar.png" alt="Pulsar Logo" onerror="this.style.display='none';"> <button class="sound-button" id="logoSoundButton" style="position: fixed; top: 20px; left: 20px; z-index: 3000;">🔊</button>
+   </div>
+   <div id="gameCanvas"></div>
+   <div class="ui-overlay">
+    <div class="menu-button hidden" id="menuButton"><span></span> <span></span> <span></span>
+    </div><button class="sound-button sound-button-fixed" id="soundButton">🔊</button>
+    <div class="menu-panel" id="menuPanel"><button class="menu-item" id="menuHome">🏠 الرج��ع ل��رئيسية</button> <button class="menu-item" id="menuRestart">🔄 الرجوع للبداية</button>
+    </div>
+    <div class="level-indicator hidden" id="levelDisplay">
+     السؤال: 1/50
+    </div>
+    <div class="score-display hidden" id="scoreDisplay">
+     ����� النقاط: 0
+    </div>
+    <div class="question-display" id="questionDisplay"></div>
+    <div class="checkpoint-animation" id="checkpointAnim">
+     ✅ نقطة حفظ! 🎯
+    </div>
+    <div class="correct-animation" id="correctAnim">
+     ✅
+    </div>
+    <div class="controls-hint hidden" id="controlsHint">
+     <div class="key-hint">
+      ← يسار
+     </div>
+     <div class="key-hint">
+      → ي��ين
+     </div>
+    </div>
+    <div class="start-screen" id="startScreen">
+     <div class="profile-button" id="profileButton">
+      👤 الملف
+     </div>
+     <h1 id="gameTitle">سماجه</h1>
+     <p class="developer-credit">Made by sohail</p><button class="game-button" id="startButton">ابدأ ا��لعبة</button>
+    </div>
+    <div class="profile-screen hidden" id="profileScreen">
+     <div class="profile-container">
+      <div class="profile-header">
+       📊 الملف الشخصي
+      </div>
+      <div class="profile-name" id="profileName">
+       اللاعب
+      </div>
+      <div class="stats-section">
+       <div class="stats-title">
+        🎯 إجمالي النقاط
+       </div>
+       <div class="stat-row"><span class="stat-label">���� سهل:</span> <span class="stat-value" id="easyScore">0</span>
+       </div>
+       <div class="stat-row"><span class="stat-label">🟡 عادي:</span> <span class="stat-value" id="normalScore">0</span>
+       </div>
+       <div class="stat-row"><span class="stat-label">🔴 صعب:</span> <span class="stat-value" id="hardScore">0</span>
+       </div>
+       <div class="stat-row"><span class="stat-label">�� مستحيل:</span> <span class="stat-value" id="impossibleScore">0</span>
+       </div>
+      </div>
+      <div class="stats-section">
+       <div class="stats-title">
+        💔 عدد ����ات الموت
+       </div>
+       <div class="stat-row"><span class="stat-label">🟢 سهل:</span> <span class="stat-value" id="easyLosses">0</span>
+       </div>
+       <div class="stat-row"><span class="stat-label">🟡 عادي:</span> <span class="stat-value" id="normalLosses">0</span>
+       </div>
+       <div class="stat-row"><span class="stat-label">🔴 صعب:</span> <span class="stat-value" id="hardLosses">0</span>
+       </div>
+       <div class="stat-row"><span class="stat-label">💀 مستحيل:</span> <span class="stat-value" id="impossibleLosses">0</span>
+       </div>
+      </div><button class="game-button" id="backFromProfile" style="width: 100%; margin-top: 20px;">العودة 🔙</button>
+     </div>
+    </div>
+    <div class="difficulty-screen hidden" id="difficultyScreen"><button class="game-button" id="backFromDifficulty" style="position: absolute; top: 20px; right: 20px; padding: 15px 30px; font-size: 20px;">رجوع 🔙</button>
+     <h1>اختر المستوى</h1>
+     <div class="difficulty-buttons"><button class="difficulty-button" data-difficulty="easy" style="border-color: #4ecdc4;"> 🟢<br>
+       سهل<br><small style="font-size:18px;">7 ثواني</small> </button> <button class="difficulty-button" data-difficulty="normal" style="border-color: #ffd93d;"> 🟡<br>
+       عادي<br><small style="font-size:18px;">5 ثواني</small> </button> <button class="difficulty-button" data-difficulty="hard" style="border-color: #ff6b6b;"> 🔴<br>
+       صعب<br><small style="font-size:18px;">3 ����واني</small> </button> <button class="difficulty-button" data-difficulty="impossible" style="border-color: #000000;"> 💀<br>
+       مستحيل<br><small style="font-size:18px;">3 ثواني</small> </button>
+     </div>
+    </div>
+    <div class="game-over-screen hidden" id="gameOverScreen"><button class="game-button" id="backFromGameOver" style="position: absolute; top: 20px; right: 20px; padding: 15px 30px; font-size: 20px;">رجوع 🔙</button>
+     <h1>💔 خطأ!</h1>
+     <p id="impossibleChallenge" style="color: #ff6b6b; font-size: 24px; font-weight: bold; margin: 10px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); display: none; z-index: 1; position: relative;">لو راجل هات 300 سكور 💪🔥</p>
+     <div class="joke-text" id="jokeText"><span id="jokeContent"></span> <span class="joke-suffix">هههه حبيبي يا عسل 😂</span>
+     </div>
+     <p class="final-score" id="finalScore">النقاط: 0</p>
+     <p id="gameOverMessage">العودة لآخ�� نقطة حفظ...</p><button class="game-button" id="continueButton">مت��بعة من نقطة الحفظ</button> <button class="game-button" id="restartButton">البدء من جديد</button>
+    </div>
+   </div>
+  </div>
+  <audio id="bgMusic" loop><source src="bgm.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="gameMusic" loop><source src="game.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="correctSound"><source src="true.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="wrongSound"><source src="false.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="clickSound"><source src="click.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    const jokes = [
+      "يا خوفي عليك تض��ع في السوبر ماركت! 🤦‍♂️",
+      "أنت ��ين والإجابة الصح وين! 😅",
+      "شكلك نسيت تفطر اليوم! 🍳",
+      "حرام ��ليك دماغ اللعبة تعب! 🧠💥",
+      "يا حبيبي روح نام شوي! 😴",
+      "واضح إنك تلعب بعينك مغمضة! 👀❌",
+      "��صراحة، كنت أتوقع أف��ل منك! 😬",
+      "حتى جوجل ما راح يساعدك! 🔍❌",
+      "يلا مرة ثانية يمكن تصيب بالصدفة! 🎲",
+      "أنت متأكد إنك صاحي�� 😵",
+      "يا ويلي على هالإجابة! ���",
+      "شكلك تلعب من تحت الطاولة! 🤪",
+      "حتى أنا صدمت من إجابتك! 😱",
+      "يا رب السماء ساعدني معاك! 🙏😂",
+      "إجابتك ه��ي ��ست��هل جائزة! 🏆❌",
+      "��ينك يا معلم الغلط! 📚❌",
+      "تبي ��رسم لك الإجابة؟ ���",
+      "يا خوفي تكون ��لعب بالمقلوب! 🔄",
+      "حرام والله الأسئلة تبكي! ���",
+      "شكلك ما أخذت قهوتك اليوم! ☕❌"
+    ];
+    
+    const defaultConfig = {
+      game_title: "سماجه",
+      start_button_text: "ابدأ اللعبة",
+      primary_color: "#4a0e3f",
+      secondary_color: "#1a0a2e",
+      gate_color: "#7d1e6a",
+      text_color: "#ffffff",
+      accent_color: "#c44569"
+    };
+
+    let config = {};
+    let currentPlayerData = null;
+    let allPlayersData = [];
+    let soundEnabled = true;
+    let bgMusic, gameMusic, correctSound, wrongSound, clickSound;
+
+    const dataHandler = {
+      onDataChanged(data) {
+        allPlayersData = data;
+        if (currentPlayerData && currentPlayerData.__backendId) {
+          const updatedPlayer = data.find(p => p.__backendId === currentPlayerData.__backendId);
+          if (updatedPlayer) {
+            currentPlayerData = updatedPlayer;
+            updateProfileDisplay();
+          }
+        }
+      }
+    };
+
+    async function initializeData() {
+      const result = await window.dataSdk.init(dataHandler);
+      if (!result.isOk) {
+        console.error("Failed to initialize data SDK");
+      }
+    }
+
+    function initAudio() {
+      bgMusic = document.getElementById('bgMusic');
+      gameMusic = document.getElementById('gameMusic');
+      correctSound = document.getElementById('correctSound');
+      wrongSound = document.getElementById('wrongSound');
+      clickSound = document.getElementById('clickSound');
+      
+      bgMusic.volume = 0.3;
+      gameMusic.volume = 0.3;
+      correctSound.volume = 0.7;
+      wrongSound.volume = 0.7;
+      clickSound.volume = 0.5;
+    }
+    
+    function playClickSound() {
+      if (soundEnabled && clickSound) {
+        clickSound.currentTime = 0;
+        clickSound.play().catch(e => console.log("Audio play prevented:", e));
+      }
+    }
+
+    function playBgMusic() {
+      if (soundEnabled && bgMusic) {
+        gameMusic.pause();
+        gameMusic.currentTime = 0;
+        bgMusic.play().catch(e => console.log("Audio play prevented:", e));
+      }
+    }
+
+    function playGameMusic() {
+      if (soundEnabled && gameMusic) {
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+        gameMusic.play().catch(e => console.log("Audio play prevented:", e));
+      }
+    }
+
+    function stopAllMusic() {
+      if (bgMusic) bgMusic.pause();
+      if (gameMusic) gameMusic.pause();
+    }
+
+    function playCorrectSound() {
+      if (soundEnabled && correctSound) {
+        correctSound.currentTime = 0;
+        correctSound.play().catch(e => console.log("Audio play prevented:", e));
+      }
+    }
+
+    function playWrongSound() {
+      if (soundEnabled && wrongSound) {
+        wrongSound.currentTime = 0;
+        wrongSound.play().catch(e => console.log("Audio play prevented:", e));
+      }
+    }
+
+    function toggleSound(button) {
+      soundEnabled = !soundEnabled;
+      button.classList.toggle('muted');
+      
+      if (soundEnabled) {
+        button.textContent = '��';
+        if (gameState.running) {
+          playGameMusic();
+        } else {
+          playBgMusic();
+        }
+      } else {
+        button.textContent = '🔇';
+        stopAllMusic();
+      }
+      
+      // تحديث الزر الآخر إذا كان موجود
+      const otherButton = button.id === 'soundButton' ? 
+        document.getElementById('logoSoundButton') : 
+        document.getElementById('soundButton');
+      
+      if (otherButton) {
+        otherButton.classList.toggle('muted', !soundEnabled);
+        otherButton.textContent = soundEnabled ? '🔊' : '🔇';
+      }
+    }
+    
+    document.getElementById('soundButton').addEventListener('click', function() {
+      toggleSound(this);
+    });
+    
+    document.getElementById('logoSoundButton').addEventListener('click', function() {
+      toggleSound(this);
+    });
+    
+    // إضافة صوت الضغط لجميع الأزرار
+    document.addEventListener('click', function(e) {
+      if (e.target.matches('button, .menu-button, .difficulty-button, .game-button, .profile-button, .menu-item')) {
+        playClickSound();
+      }
+    });
+
+    initializeData();
+    initAudio();
+
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        playBgMusic();
+      }, 3500);
+    });
+
+    async function onConfigChange(newConfig) {
+      config = newConfig;
+      
+      const gameTitle = document.getElementById('gameTitle');
+      const startButton = document.getElementById('startButton');
+      
+      if (gameTitle) {
+        gameTitle.textContent = config.game_title || defaultConfig.game_title;
+      }
+      if (startButton) {
+        startButton.textContent = config.start_button_text || defaultConfig.start_button_text;
+      }
+      
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const secondaryColor = config.secondary_color || defaultConfig.secondary_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const accentColor = config.accent_color || defaultConfig.accent_color;
+      
+      document.querySelector('.game-wrapper').style.background = `linear-gradient(180deg, ${primaryColor} 0%, ${secondaryColor} 100%)`;
+      
+      if (scene) {
+        const fogColor = parseInt(primaryColor.replace('#', '0x'));
+        scene.fog = new THREE.Fog(fogColor, 10, 100);
+        if (renderer) {
+          renderer.setClearColor(fogColor, 1);
+        }
+      }
+      
+      const screens = document.querySelectorAll('.game-over-screen, .difficulty-screen');
+      screens.forEach(screen => {
+        screen.style.background = `linear-gradient(135deg, ${primaryColor}f2, ${secondaryColor}f2)`;
+      });
+      
+      const buttons = document.querySelectorAll('.game-button');
+      buttons.forEach(button => {
+        button.style.color = textColor;
+      });
+      
+      const finalScore = document.getElementById('finalScore');
+      if (finalScore) {
+        finalScore.style.color = accentColor;
+      }
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.primary_color || defaultConfig.primary_color,
+            set: (value) => {
+              config.primary_color = value;
+              window.elementSdk.setConfig({ primary_color: value });
+            }
+          },
+          {
+            get: () => config.secondary_color || defaultConfig.secondary_color,
+            set: (value) => {
+              config.secondary_color = value;
+              window.elementSdk.setConfig({ secondary_color: value });
+            }
+          },
+          {
+            get: () => config.gate_color || defaultConfig.gate_color,
+            set: (value) => {
+              config.gate_color = value;
+              window.elementSdk.setConfig({ gate_color: value });
+            }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => {
+              config.text_color = value;
+              window.elementSdk.setConfig({ text_color: value });
+            }
+          },
+          {
+            get: () => config.accent_color || defaultConfig.accent_color,
+            set: (value) => {
+              config.accent_color = value;
+              window.elementSdk.setConfig({ accent_color: value });
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ["game_title", config.game_title || defaultConfig.game_title],
+        ["start_button_text", config.start_button_text || defaultConfig.start_button_text]
+      ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+      config = window.elementSdk.config;
+    } else {
+      config = defaultConfig;
+    }
+
+    let scene, camera, renderer, player, gates = [], floor, gateTexts = [];
+    const container = document.getElementById('gameCanvas');
+
+    function initThreeJS() {
+      scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x4a0e3f, 10, 100);
+      
+      const skyTexture = new THREE.TextureLoader().load('sky.jpg');
+      scene.background = skyTexture;
+      
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 5, -8);
+      camera.lookAt(0, 2, 0);
+      
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x4a0e3f, 1);
+      container.appendChild(renderer.domElement);
+      
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+      
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(5, 10, 5);
+      scene.add(directionalLight);
+      
+      const floorGeometry = new THREE.PlaneGeometry(25, 200);
+      const floorMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x2d1b3d,
+        roughness: 0.8
+      });
+      floor = new THREE.Mesh(floorGeometry, floorMaterial);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.z = 50;
+      scene.add(floor);
+      
+      for (let i = -1; i <= 1; i++) {
+        if (i === 0) continue;
+        const lineGeometry = new THREE.BoxGeometry(0.2, 0.1, 200);
+        const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.6, transparent: true });
+        const line = new THREE.Mesh(lineGeometry, lineMaterial);
+        line.position.set(i * 6, 0.05, 50);
+        scene.add(line);
+      }
+      
+      for (let i = 0; i < 40; i++) {
+        const lineGeometry = new THREE.BoxGeometry(25, 0.05, 0.1);
+        const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.3, transparent: true });
+        const line = new THREE.Mesh(lineGeometry, lineMaterial);
+        line.position.set(0, 0.05, i * 5);
+        scene.add(line);
+      }
+      
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function createPlayer() {
+      const group = new THREE.Group();
+      
+      const bodyGeometry = new THREE.BoxGeometry(0.8, 1.2, 0.6);
+      const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x8b2f7b });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      body.position.y = 0.6;
+      group.add(body);
+      
+      const headGeometry = new THREE.SphereGeometry(0.35, 16, 16);
+      const headMaterial = new THREE.MeshStandardMaterial({ color: 0xb54b9e });
+      const head = new THREE.Mesh(headGeometry, headMaterial);
+      head.position.y = 1.5;
+      group.add(head);
+      
+      const armGeometry = new THREE.CylinderGeometry(0.15, 0.15, 1, 8);
+      const armMaterial = new THREE.MeshStandardMaterial({ color: 0x8b2f7b });
+      
+      const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+      leftArm.position.set(-0.6, 0.6, 0);
+      leftArm.rotation.z = -0.3;
+      group.add(leftArm);
+      
+      const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+      rightArm.position.set(0.6, 0.6, 0);
+      rightArm.rotation.z = 0.3;
+      group.add(rightArm);
+      
+      const legGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.8, 8);
+      const legMaterial = new THREE.MeshStandardMaterial({ color: 0x8b2f7b });
+      
+      const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+      leftLeg.position.set(-0.25, -0.4, 0);
+      group.add(leftLeg);
+      
+      const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+      rightLeg.position.set(0.25, -0.4, 0);
+      group.add(rightLeg);
+      
+      group.position.set(0, 1, 0);
+      scene.add(group);
+      
+      group.userData.leftArm = leftArm;
+      group.userData.rightArm = rightArm;
+      group.userData.leftLeg = leftLeg;
+      group.userData.rightLeg = rightLeg;
+      
+      player = group;
+    }
+
+    function createTextTexture(text) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 60px Tajawal, Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      const words = text.split(' ');
+      if (words.length > 2) {
+        ctx.font = 'bold 45px Tajawal, Arial';
+        const lineHeight = 70;
+        const startY = canvas.height / 2 - (lineHeight * (Math.ceil(words.length / 2) - 1)) / 2;
+        
+        for (let i = 0; i < words.length; i += 2) {
+          const line = words.slice(i, i + 2).join(' ');
+          ctx.fillText(line, canvas.width / 2, startY + (i / 2) * lineHeight);
+        }
+      } else {
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      }
+      
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    function createGates(gateData) {
+      gates.forEach(gate => {
+        gate.meshes.forEach(mesh => scene.remove(mesh));
+      });
+      gateTexts.forEach(sprite => scene.remove(sprite));
+      gates = [];
+      gateTexts = [];
+      
+      const gatePositions = [-6, 0, 6];
+      
+      gateData.forEach((data, index) => {
+        const gateGroup = [];
+        
+        const leftPillar = new THREE.Mesh(
+          new THREE.BoxGeometry(0.8, 6, 0.8),
+          new THREE.MeshStandardMaterial({ color: hexToNumber(config.gate_color || defaultConfig.gate_color) })
+        );
+        leftPillar.position.set(gatePositions[data.lane] - 3, 3, 50);
+        scene.add(leftPillar);
+        gateGroup.push(leftPillar);
+        
+        const rightPillar = new THREE.Mesh(
+          new THREE.BoxGeometry(0.8, 6, 0.8),
+          new THREE.MeshStandardMaterial({ color: hexToNumber(config.gate_color || defaultConfig.gate_color) })
+        );
+        rightPillar.position.set(gatePositions[data.lane] + 3, 3, 50);
+        scene.add(rightPillar);
+        gateGroup.push(rightPillar);
+        
+        const topBar = new THREE.Mesh(
+          new THREE.BoxGeometry(6.8, 0.8, 0.8),
+          new THREE.MeshStandardMaterial({ color: hexToNumber(config.gate_color || defaultConfig.gate_color) })
+        );
+        topBar.position.set(gatePositions[data.lane], 6, 50);
+        scene.add(topBar);
+        gateGroup.push(topBar);
+        
+        const textTexture = createTextTexture(data.text);
+        const spriteMaterial = new THREE.SpriteMaterial({ map: textTexture });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.position.set(gatePositions[data.lane], 3.5, 50);
+        sprite.scale.set(5, 2.5, 1);
+        scene.add(sprite);
+        gateTexts.push(sprite);
+        
+        gates.push({
+          lane: data.lane,
+          correct: data.correct,
+          text: data.text,
+          meshes: gateGroup,
+          z: 50
+        });
+      });
+    }
+
+    function hexToNumber(hex) {
+      return parseInt(hex.replace('#', '0x'));
+    }
+
+    const easyQuestions = [
+      { q: "لو أكلت نفسك، راح تختفي ولا تصير ضعفين؟ 🤔", c: "تنفج��", w1: "تتبخر", w2: "تتضاعف" },
+      { q: "الحجر يشوف أحلام؟ 🪨", c: "يحلم بالذه��", w1: "يحلم بالرمل", w2: "يحلم يطير" },
+      { q: "لو الدجاجة سبقت البيضة في السباق، ��ين الفائز؟ 🏃", c: "الحكم", w1: "��لدجاجة", w2: "البيضة" },
+      { q: "الم��ء ممكن يبتل؟ 💧", c: "يذوب", w1: "يبتل", w2: "يجف" },
+      { q: "لو نطيت في الطيارة، وين راح توصل؟ ✈️", c: "مكانك", w1: "الكابينة", w2: "السقف" },
+      { q: "النار تحت����؟ 🔥", c: "النار نفسها", w1: "��حترق", w2: "تنطفي" },
+      { q: "لو قطعت التيار، النور يروح ��ين؟ 💡", c: "يختفي", w1: "يطير", w2: "ير��ع" },
+      { q: "الظل يتعب؟ 👤", c: "يتلاشى", w1: "يتعب", w2: "يستريح" },
+      { q: "لو الشمس ��ابت، الليل من وين جاء؟ 🌙", c: "دورا�� الأرض", w1: "ا��������شمس راحت", w2: "القمر جاء" },
+      { q: "السمك يعطش؟ 🐟", c: "يحتاج ماء عذب", w1: "يعطش", w2: "ما يشرب" },
+      { q: "ل�� م��يت بسر��ة الضوء، تشوف وجهك؟ 💨", c: "تنفجر", w1: "تشوف", w2: "ما تشوف" },
+      { q: "��لهواء له ط��م؟ 🌬��", c: "عديم الطعم", w1: "حلو", w2: "مالح" },
+      { q: "لو ال��رض وقفت، ايش راح ي��ير؟ ��", c: "نطير", w1: "عادي", w2: "نقع" },
+      { q: "الثلج يبرد؟ ❄️", c: "لا إحساس", w1: "يبرد", w2: "يسخن" },
+      { q: "لو نمت واقف، عينك تص��ى؟ ��", c: "تحلم واقف", w1: "تصحى", w2: "تنام" },
+      { q: "المرايا تشوف نفسها؟ 🪞", c: "تعكس فقط", w1: "تشوف", w2: "عميا��" },
+      { q: "لو فتحت ال��اب بالقوة، ��لباب يتألم؟ 🚪", c: "يتكسر", w1: "يتألم", w2: "يصرخ" },
+      { q: "الصوت له لون؟ ���", c: "موجات", w1: "أزرق", w2: "أحمر" },
+      { q: "لو صرخت في الفضاء، مين يسمع؟ 🚀", c: "لا أحد", w1: "الكواكب", w2: "رواد الفضاء" },
+      { q: "الكتاب يقرأ نفسه؟ 📖", c: "يحتاج قارئ", w1: "يقرأ", w2: "يحفظ" },
+      { q: "لو ذبت الجليد، الماء ��تذكر؟ ����", c: "يت��ول فقط", w1: "يتذكر", w2: "ينسى" },
+      { q: "الساعة تحس بالوقت؟ ⏰", c: "تقيس فقط", w1: "تحس", w2: "تمل" },
+      { q: "ل���� رميت حجر في البحر، البحر يحس؟ 🌊", c: "يتموج", w1: "يتألم", w2: "يغضب" },
+      { q: "النجوم تضيء ولا تعكس؟ ���", c: "تضيء", w1: "تعكس", w2: "تطفي" },
+      { q: "لو جمدت الوقت، الساعة توقف؟ ⏸️", c: "كل ��ي يوقف", w1: "تستمر", w2: "تنكسر" },
+      { q: "الصو��ة تتذكر اللحظة؟ ���", c: "تحفظ فقط", w1: "تتذكر", w2: "تنسى" },
+      { q: "لو حطيت ثلج في النار، مين يفوز؟ 🔥❄️", c: "النار", w1: "الثلج", w2: "تعادل" },
+      { q: "الغيوم ت��شي ولا تطير؟ ☁️", c: "تن����ف", w1: "تمشي", w2: "تطير" },
+      { q: "لو دخلت حمام السباحة ��الشامبو، الماء يغسل؟ ��", c: "يتلوث", w1: "ينظف", w2: "��تصبن" },
+      { q: "الورقة تتألم لما تنثني؟ 📄", c: "تتكسر", w1: "تتألم", w2: "تصرخ" },
+      { q: "لو غمضت عينك، الدنيا ت��تفي؟ 👁️", c: "أنت ما تشوف", w1: "تختفي", w2: "تظلم" },
+      { q: "الرمل يعد نفسه؟ 🏖️", c: "كثير جداً", w1: "يعد", w2: "يتعب" },
+      { q: "لو ضح��ت بدون صوت، هذا ��حك؟ 😄", c: "ضحك صامت", w1: "ضحك", w2: "����ثيل" },
+      { q: "الجبل يكبر ولا يصغر؟ ⛰��", c: "يتآكل", w1: "يكبر", w2: "يصغر" },
+      { q: "لو قفلت أذنك، الصوت يوقف؟ 👂", c: "أنت ما تسمع", w1: "يوقف", w2: "يزيد" },
+      { q: "��لنهر يعرف وين رايح؟ 🏞️", c: "يتبع المنحدر", w1: "يعرف", w2: "يتيه" },
+      { q: "لو كسرت ال���اعة، الوقت يوقف؟ 🕐", c: "الساعة ��وقف", w1: "الوقت ��وقف", w2: "ترجع للوراء" },
+      { q: "الباب يعرف مين داخل؟ 🚪", c: "مجرد باب", w1: "يعرف", w2: "ي��لم" },
+      { q: "لو مسكت الهواء، ايش تحس؟ 💨", c: "ما تمسك شي", w1: "بارد", w2: "ثقيل" },
+      { q: "الشارع يتعب من ��لسيار��ت؟ 🚗", c: "يتشقق", w1: "يتعب", w2: "يستريح" },
+      { q: "لو رسمت دائرة، وين البداية؟ ⭕", c: "م�� في بداية", w1: "��وق", w2: "يم��ن" },
+      { q: "الصدى مين يتكلم؟ 🗣️", c: "انعكاس صوتك", w1: "شخص تاني", w2: "ال��بل" },
+      { q: "لو حطيت مرايا قدام مرايا؟ 🪞🪞", c: "لا نهاية", w1: "تنكسر", w2: "تضيع" },
+      { q: "القلم يعرف ايش يكتب؟ ✏️", c: "أنت تكتب", w1: "يعرف", w2: "يتعلم" },
+      { q: "لو وقفت على رأسك، ��لعالم مقلوب؟ 🙃", c: "نظرك مقلوب", w1: "العالم مقلوب", w2: "عادي" },
+      { q: "الباب المفتوح يدخ�� ولا يطلع؟ 🚪", c: "الاثنين", w1: "يدخل", w2: "يطلع" },
+      { q: "لو قلت لا، هل ق��ت شي؟ 🤐", c: "قلت لا", w1: "ما قلت ��ي", w2: "ق��ت نعم" },
+      { q: "الفراغ ممتلئ بالفراغ؟ ⭕", c: "��راغ", w1: "ممتلئ", w2: "نص ن��" },
+      { q: "لو ج��يت حول الأرض، تلحق نفسك؟ 🏃‍♂️🌍", c: "نفس المكان", w1: "تلحق", w2: "تتعب" },
+      { q: "����لباب المقفل يحلم بالفتح؟ 🔒", c: "مجرد باب", w1: "يحل��", w2: "يستسلم" }
+    ];
+
+    const normalQuestions = [
+      { q: "لو قطعت شعرك، الشعر يحس؟ 💇", c: "تندم أنت", w1: "يتألم", w2: "يصرخ" },
+      { q: "الوقت يمشي و��ا نحن ��مشي؟ ⏳", c: "الاثنين", w1: "الوقت", w2: "نحن" },
+      { q: "لو فكرت ب��لبرتقال، لونه يت��ير؟ ��", c: "يبقى برتقالي", w1: "يصير أخضر", w2: "يصير تفاح" },
+      { q: "الصمت ��ه صوت؟ 🤫", c: "غياب الصوت", w1: "صوت خفيف", w2: "صراخ داخلي" },
+      { q: "لو الشمس طلعت من الغرب؟ ��", c: "ال��يامة", w1: "يوم عا��ي", w2: "نتحول خفافيش" },
+      { q: "الحلم حقيقة ولا ��هم؟ ���", c: "ت��ربة دماغية", w1: "��قيقة بديلة", w2: "وهم خالص" },
+      { q: "لو مات الموت، ايش يصير؟ 💀", c: "خلود", w1: "ما في شي", w2: "الحياة تموت" },
+      { q: "ال��كرى موجودة فين؟ 🧠", c: "في الدماغ", w1: "في القلب", w2: "في الماضي" },
+      { q: "لو نسيت كل شي، تفتكر إنك نسيت؟ 🤔", c: "مستحيل", w1: "أكيد", w2: "ربما" },
+      { q: "الألم حقيقي ولا إشارا��؟ ������", c: "إشارات ��صبية", w1: "حقيقي فقط", w2: "وهم كامل" },
+      { q: "لو البارحة كان كذب�� الي��م موجود؟ 📅", c: "الذاكرة فقط", w1: "موجود حقيقي", w2: "مو موجود" },
+      { q: "ا��كذبة البيضاء كذب؟ 🤥", c: "كذب لطيف", w1: "مو كذب", w2: "نص كذب" },
+      { q: "لو شفت نفسك في ��لماضي، تتعرف ع��يك؟ 👶", c: "أنت تغي��ت", w1: "أكيد", w2: "أبداً" },
+      { q: "الخوف من الخوف خوف؟ 😨", c: "خوف مضاعف", w1: "مو خوف", w2: "أشد خوف" },
+      { q: "لو كل الناس نامت، الوقت يوقف؟ 😴", c: "يستمر", w1: "يوقف", w2: "يبطئ" },
+      { q: "الفكرة تموت؟ 💡", c: "تُنسى", w1: "تعيش لل��بد", w2: "تتطور" },
+      { q: "لو الكون له صوت، ايش تتوقع؟ 🌌", c: "صمت مطبق", w1: "موسيقى", w2: "صراخ" },
+      { q: "الحقيقة واحدة ولا ��ثيرة؟ ��", c: "زوا��ا مخ��لفة", w1: "واحدة فقط", w2: "كثيرة" },
+      { q: "لو تكلمت مع نفسك، مين السامع؟ 🗣️", c: "أنت", w1: "شخص تاني", w2: "الشيطان" },
+      { q: "ال��سيان نعمة ولا نقمة؟ 🧠", c: "الاثنين", w1: "نعمة", w2: "نقمة" },
+      { q: "لو الماضي يتغير، الم��تقبل يتأثر؟ ⏰", c: "أكيد", w1: "مستحيل", w2: "عكسياً" },
+      { q: "الكون له بداية؟ 🌍", c: "الانفجار الكبير", w1: "أزلي", w2: "ما ندري" },
+      { q: "لو قلت 'أنا كاذب' هل أنت صادق؟ 🤥", c: "مفارقة", w1: "صادق", w2: "كاذب" },
+      { q: "الموسيقى لغة؟ 🎵", c: "لغة عالمية", w1: "مو لغة", w2: "لغة خاصة" },
+      { q: "لو غيرت اسمك�� أنت ��فس الشخص؟ 📛", c: "أكيد", w1: "شخص جد��د", w2: "نصين" },
+      { q: "الحب شعور ولا قرار؟ ❤️", c: "الاثنين", w1: "شعور ��قط", w2: "قرار فقط" },
+      { q: "لو ال����الم محاكاة، الألم حقيقي؟ 🎮", c: "تحس فيه", w1: "حقيقي", w2: "��زيف" },
+      { q: "البكاء ضعف ولا قوة؟ ��", c: "تعبير صحي", w1: "ضعف", w2: "قوة" },
+      { q: "لو عرفت المستقبل، تعيش الحاضر؟ 🔮", c: "صعب جداً", w1: "عادي", w2: "مستحيل" },
+      { q: "الصداقة تدوم؟ 👫", c: "تحتاج جهد", w1: "��ائماً", w2: "مستحيل" },
+      { q: "لو طلعت من جسمك، ��نت فين؟ 👻", c: "الوعي", w1: "في الهواء", w2: "ضايع" },
+      { q: "الألوان نفسها للجميع؟ 🌈", c: "ما ندري", w1: "أكيد", w2: "مختلفة" },
+      { q: "لو اختفى الإنت��نت، الذكريات تروح؟ 📱", c: "السحابية تروح", w1: "كلها تروح", w2: "تبقى" },
+      { q: "الندم يغير ا��ماضي؟ 😔", c: "يغير نظرتك", w1: "يغيره", w2: "ما يغيره" },
+      { q: "لو حلمت إنك تحلم، وين أنت؟ 😴", c: "حلم متعدد", w1: "حالم", w2: "صاحي" },
+      { q: "المستحيل ممكن؟ 🚀", c: "أحياناً", w1: "دائماً", w2: "أبداً" },
+      { q: "لو الليل ما انتهى؟ 🌙", c: "نتكيف", w1: "ننام دائم", w2: "نموت" },
+      { q: "الإحساس بالزمن حقيقي؟ ���", c: "إدراك نسبي", w1: "حقيقي", w2: "وهم" },
+      { q: "لو الجنة موجودة، الحياة اختبار؟ ⛪", c: "حسب المعتقد", w1: "أكيد", w2: "مستحيل" },
+      { q: "��لإنسان خيّر ولا شرير؟ 👤", c: "الا��نين", w1: "خيّر", w2: "شرير" },
+      { q: "لو ����بلت الل����، ايش تسأل؟ 🙏", c: "لماذا المعاناة", w1: "عن الجنة", w2: "عن المستقبل" },
+      { q: "الذكاء الاصطناعي يحس؟ 🤖", c: "ما ندري بعد", w1: "أكيد", w2: "مستحيل" },
+      { q: "لو عشت للأبد، تمل؟ ♾️", c: "محتمل جداً", w1: "أكيد", w2: "أبداً" },
+      { q: "الكراهية أقوى من الحب؟ 💔", c: "الحب أقوى", w1: "الكراهية أقوى", w2: "متساويين" },
+      { q: "لو خيروك ��ين الثروة والحكمة؟ 💰🧠", c: "الحكمة", w1: "الثروة", w2: "الاثنين" },
+      { q: "الإنسان حر؟ 🦅", c: "حرية نسبية", w1: "حر تماماً", w2: "مقيد تماماً" },
+      { q: "لو عرفت يوم موتك؟ �����", c: "تعيش مختلف", w1: "تست��د", w2: "تجنّ" },
+      { q: "المعرفة قوة؟ 📚", c: "مع الحكمة", w1: "��ائماً", w2: "أحياناً" },
+      { q: "لو الزمن دائري؟ 🔄", c: "نعيد التاريخ", w1: "مستحيل", w2: "ممكن" },
+      { q: "الروح لها وزن؟ 👻", c: "21 جرام", w1: "بلا وزن", w2: "ثقيلة" }
+    ];
+
+    const hardQuestions = [
+      { q: "لو توقفت عن التفكير، أنت موجود؟ 🤯", c: "نايم", w1: "موجود", w2: "مش موجود" },
+      { q: "ممكن تقرر إنك ما تقرر؟ 🎭", c: "هذا قرار", w1: "ممكن", w2: "مستحي����" },
+      { q: "الكذبة إذا صدقها الكل، تصير ح��يقة؟ 🤥", c: "وهم جماعي", w1: "تصير حقيقة", w2: "تبقى كذبة" },
+      { q: "الوعي موجود في الدماغ؟ 🧠", c: "ما ندري", w1: "أ���يد", w2: "في الر��ح" },
+      { q: "لو تذكرت شي ما ����ر�� هذي ذاكرة؟ 💭", c: "ذاكرة زائفة", w1: "ذاكرة حقيقية", w2: "مو ذاكرة" },
+      { q: "الصفر ��قم؟ 0️⃣", c: "رقم", w1: "مو رقم", w2: "مجرد رمز" },
+      { q: "لو اللانهاية انتهت؟ ∞", c: "تناقض", w1: "ممكن", w2: "مستحيل" },
+      { q: "الزمن مو��ود ولا إحساس؟ ⏰", c: "بعد رابع", w1: "موجود", w2: "إحساس" },
+      { q: "لو الكون له حدود، ايش بعدها؟ 🌌", c: "فراغ مطلق", w1: "كون تاني", w2: "جدار" },
+      { q: "الذرة موج��دة ولا احتمالات؟ ⚛️", c: "موجات كمومية", w1: "موجودة", w2: "احتمالات" },
+      { q: "لو غيرت كل خل��ياك، أنت نفسك؟ ��", c: "سفينة ثيسيوس", w1: "نفسي", w2: "شخص جديد" },
+      { q: "الح��ضر موجود؟ ��", c: "لحظة ع��بر��", w1: "موج��د", w2: "��هم" },
+      { q: "لو السبب والنتيجة وهم؟ 🔄", c: "الكون عشوائي", w1: "مستحيل", w2: "مم��ن" },
+      { q: "الرياضيات مكتشفة ولا مخ��رعة؟ 📐", c: "نقاش ف��سفي", w1: "مكتش��ة", w2: "م��ترعة" },
+      { q: "لو العدم كان شي؟ ⭕", c: "تناقض", w1: "ممكن", w2: "مستحي��" },
+      { q: "الو��ود له معنى؟ ��", c: "ت��لق معناك", w1: "��ه معنى", w2: "بلا معنى" },
+      { q: "لو الواقع حلم، الحلم واقع؟ 💭", c: "لا ��رق", w1: "صح", w2: "خطأ" },
+      { q: "الحرية موجودة؟ 🦅", c: "وهم نافع", w1: "موجودة", w2: "وهم" },
+      { q: "لو ��ل شي محدد مسبقاً؟ 🎲", c: "حتمية", w1: "حر", w2: "مح��د" },
+      { q: "ال��نا حقيقي ولا وهم؟ 👤", c: "بناء ذهني", w1: "حقيقي", w2: "وهم" },
+      { q: "لو الموت بداية؟ ⚰️", c: "ما ندري", w1: "بداية", w2: "نهاية" },
+      { q: "الفراغ ��لكمومي فاضي؟ 🌌", c: "ممتلئ بطاقة", w1: "فاضي", w2: "��صف ممتلئ" },
+      { q: "لو ا���زمن ��تفرع؟ 🔀", c: "أكوان مت��ازية", w1: "يتفرع", w2: "خط واحد" },
+      { q: "الملاحظة تخلق الواقع؟ 👁️", c: "في الكم", w1: "تخلق", w2: "ما تخلق" },
+      { q: "لو السؤال أهم من الإجابة؟ ❓", c: "فلسفياً", w1: "السؤال", w2: "الإجابة" },
+      { q: "الحقيقة المطلقة موجودة؟ ✨", c: "نسبية", w1: "موجودة", w2: "وهم" },
+      { q: "لو الضوء وقف�� تشوف؟ 💡", c: "ظلام مطلق", w1: "تشوف", w2: "ما تشوف" },
+      { q: "النقطة لها حجم؟ ���", c: "ب��ا أبع��د", w1: "���ها حجم", w2: "بلا حجم" },
+      { q: "لو تخي��ت المستحيل، صا�� ممكن؟ 🚀", c: "في الخي��ل", w1: "صار ممكن", w2: "مستحيل" },
+      { q: "المادة وال��اقة شي واحد؟ ⚡", c: "E=mc²", w1: "شي واحد", w2: "شيئين" },
+      { q: "لو الكون واع��؟ 🌍", c: "��حدة الوجود", w1: "واعي", w2: "غير واعي" },
+      { q: "الذكاء قا��ل للتعري��؟ 🧠", c: "معقد", w1: "قابل", w2: "غير قابل" },
+      { q: "لو الحب كيميائي، حقيقي؟ ❤️", c: "كيمياء حقيقية", w1: "حقيقي", w2: "وهم" },
+      { q: "المنط�� مطلق؟ ��", c: "أنظمة متعددة", w1: "مطلق", w2: "نسبي" },
+      { q: "لو الجمال نسبي؟ 🎨", c: "ثقافي", w1: "نسبي", w2: "مطلق" },
+      { q: "الفن ��حتاج معنى؟ 🖼️", c: "ل�� ضرورة", w1: "يحت����ج", w2: "ما يح��اج" },
+      { q: "لو الأخلاق نسبية؟ ⚖���", c: "نسبية ثقافية", w1: "نسبية", w2: "مطلقة" },
+      { q: "الشر ضروري للخير؟ ☯️", c: "توازن", w1: "ضروري", w2: "غير ضروري" },
+      { q: "لو اللغة تشكل الفكر؟ 🗣️", c: "نظرية سابير", w1: "تشكل", w2: "ما تشكل" },
+      { q: "الصدفة موجودة؟ 🎲", c: "عشوائية كمومية", w1: "موجودة", w2: "كل شي ��خطط" },
+      { q: "لو الني���� تكفي؟ 💭", c: "الفعل مهم", w1: "تكفي", w2: "ما تكفي" },
+      { q: "المعرفة تساو�� القوة؟ 📚", c: "مع الحكمة", w1: "تساوي", w2: "ما تساوي" },
+      { q: "لو الماضي ي��ثر بالحاضر؟ ⏮️", c: "حتماً", w1: "يؤثر", w2: "ما يؤثر" },
+      { q: "العقل أقوى م�� القلب�� 🧠❤️", c: "يتك��ملان", w1: "العقل", w2: "القلب" },
+      { q: "لو الموت نهاية؟ 💀", c: "جسدياً", w1: "ن��اية", w2: "بداية" },
+      { q: "الحياة عادلة؟ ⚖️", c: "غير ��ادلة", w1: "عادلة", w2: "أحياناً" },
+      { q: "لو ال��عادة ��دف�� ��", c: "رحل��", w1: "هدف", w2: "وسيلة" },
+      { q: "الألم يعلم؟ 😣", c: "معلم قاسي", w1: "يعلم", w2: "ما يعلم" },
+      { q: "��و الأمل وهم؟ ���", c: "وهم ��روري", w1: "وهم", w2: "حقيقة" },
+      { q: "الحقيقة مؤلمة؟ 💔", c: "أحياناً", w1: "د����ماً", w2: "نادراً" }
+    ];
+
+    const impossibleQuestions = [
+      { q: "لو فكرت إنك ما تفكر، قاعد تفك��؟ ���", c: "مفارقة", w1: "تفكر", w2: "ما تفكر" },
+      { q: "ممكن شي ي��ون صح وغلط نفس ال��قت؟ ⚡", c: "في الكم", w1: "مم��ن", w2: "مستحيل" },
+      { q: "اللا شيء شيء ولا مو شيء؟ ⭕", c: "العدم موجود", w1: "شيء", w2: "مو شيء" },
+      { q: "الوجود سؤ��ل ولا إجابة؟ 🌌", c: "السؤال نفسه", w1: "سؤ��ل", w2: "إجا��ة" },
+      { q: "لو الحقيقة تعتمد على المرا��ب؟ 👁️", c: "��يكانيكا الكم", w1: "تعتمد", w2: "ما تعتمد" },
+      { q: "الصمت المطلق صوت؟ 🤫", c: "غياب مطلق", w1: "صوت خافت", w2: "صراخ داخلي" },
+      { q: "لو اللانهاية لها نصف؟ ∞/2", c: "لا نهاية أيضاً", w1: "نصف لا نهاية", w2: "رقم محدد" },
+      { q: "الفراغ المطلق موجود؟ ⭕", c: "طاقة صفر نقطة", w1: "موجود", w2: "مستحيل" },
+      { q: "لو السبب ه�� النتيجة؟ 🔄", c: "����لقة سببية", w1: "ممكن", w2: "مستحيل" },
+      { q: "الزمن بُعد ولا وهم؟ ⏰", c: "بُعد نسبي", w1: "بُعد", w2: "وهم" },
+      { q: "لو الواقع لا واقعي؟ 🎭", c: "سريالية", w1: "ممكن", w2: "مستحيل" },
+      { q: "النقيض يخلق النقيض؟ ☯️", c: "جدلية", w1: "يخلق", w2: "ما يخلق" },
+      { q: "لو التناقض حقيقة؟ ⚡", c: "المنطق التناقضي", w1: "حقيقة", w2: "مستحيل" },
+      { q: "الوعي بالوعي وعي؟ 🧠", c: "��عي ذاتي", w1: "وعي", w2: "لا و��ي" },
+      { q: "لو ا��عدم ��ص�� الوجود؟ ⭕������✨", c: "التقلب الكمومي", w1: "أصل ا��وجود", w2: "مستحيل" },
+      { q: "الحقيقة متعدد��؟ 🔮", c: "تفسيرات متعددة", w1: "متعددة", w2: "واحدة" },
+      { q: "لو المستقبل يؤثر بال��اضي؟ 🔄", c: "السببية العكسية", w1: "يؤثر", w2: "مستحيل" },
+      { q: "الكل أكبر من مجموع الأجزا��؟ 🧩", c: "التكامل", w1: "أكبر", w2: "متساوي" },
+      { q: "لو الوحدة في الكثرة؟ 1️⃣=∞", c: "فلسفة الوحدة", w1: "الوحدة فيها", w2: "منفصلي��" },
+      { q: "اللحظة الحالية موجودة؟ ⚡", c: "دائماً عابرة", w1: "موجودة", w2: "وهم" },
+      { q: "لو الشك يقين؟ 🤔", c: "أشك إذاً أنا", w1: "يقين", w2: "شك فق��" },
+      { q: "المعرفة ج����ل؟ ��❓", c: "كلما عرفت", w1: "جهل", w2: "معرفة" },
+      { q: "لو الخير شر والشر ��ير؟ ☯️", c: "نسبية أخلاقية", w1: "ممكن", w2: "مستحيل" },
+      { q: "الموت حياة؟ ⚰️➡️🌱", c: "دائرة", w1: "حياة", w2: "موت" },
+      { q: "لو الحرية سجن؟ 🦅🔒", c: "مسؤولية", w1: "سجن", w2: "حرية" },
+      { q: "السعادة تعاسة؟ ���😔", c: "نسبية", w1: "تعاسة", w2: "��عادة" },
+      { q: "لو الوجود عدم�� ✨⭕", c: "العدمي��", w1: "عدم", w2: "وجود" },
+      { q: "الحقيقة كذب؟ ��❌", c: "ما بعد الحداثة", w1: "كذب", w2: "حقيقة" },
+      { q: "لو المنطق لا منطقي؟ 🔣��", c: "اللامنطق", w1: "لا منطقي", w2: "منطقي" },
+      { q: "الضوء ظلا��؟ 💡🌑", c: "غياب ظل��م", w1: "ظلام", w2: "ضوء" },
+      { q: "لو البداية نهاية؟ 🔄", c: "د����رة أبدية", w1: "نهاية", w2: "بداية" },
+      { q: "الثبات تغير؟ ��️���️", c: "كل شي يتغير", w1: "تغير", w2: "ثبات" },
+      { q: "لو التام ناقص؟ ✅❓", c: "الكمال نسبي", w1: "ناقص", w2: "تام" },
+      { q: "الواحد كثير؟ 1️⃣=♾️", c: "وحدة الوجود", w1: "كثير", w2: "واحد" },
+      { q: "لو الحب كره؟ ❤️💔", c: "وجهان", w1: "كره", w2: "حب" },
+      { q: "الزمن لا زمني؟ ⏰❌", c: "خارج الزمن", w1: "لا زمني", w2: "زمني" },
+      { q: "لو الفراغ امتل��ء؟ ⭕���", c: "طاقة كامنة", w1: "امتل��ء", w2: "فراغ" },
+      { q: "الصوت ��مت؟ 🔊🤫", c: "تردد", w1: "صمت", w2: "صوت" },
+      { q: "لو الحركة سكون؟ 🏃⏸️", c: "نسبية", w1: "سكون", w2: "حركة" },
+      { q: "الحياة م��ت؟ ❤️💀", c: "صيرورة", w1: "موت", w2: "حياة" },
+      { q: "لو الأنا لا أنا�� 👤❌", c: "البوذية", w1: "لا أنا", w2: "أنا" },
+      { q: "الكون ذرة؟ 🌌⚛️", c: "��سبية الحجم", w1: "ذرة", w2: "كون" },
+      { q: "لو الإجابة سؤال؟ ✅❓", c: "دائماً", w1: "سؤال", w2: "إجابة" },
+      { q: "الحقيقة رحلة؟ ✨🚶", c: "ليست وجهة", w1: "رحلة", w2: "وجهة" },
+      { q: "لو المعنى لا معنى؟ 📖❌", c: "العبثية", w1: "لا معنى", w2: "معنى" },
+      { q: "الوجود سؤال نف��ه؟ 🌍❓", c: "التساؤل الأبدي", w1: "سؤال نفسه", w2: "إجابة" },
+      { q: "لو كل شي لا شي؟ ✨⭕", c: "الفراغ البوذي", w1: "لا شي", w2: "شي" },
+      { q: "السؤال إجابة؟ ❓✅", c: "في ذاته", w1: "إجابة", w2: "س��ال" },
+      { q: "لو الفكرة تفكر نفسها؟ ��🔄", c: "وعي ذاتي", w1: "تفكر نفسها", w2: "مستحيل" },
+      { q: "الحقيقة المطلقة نسبية؟ ✨🔄", c: "مفارق��", w1: "نسبية", w2: "م��لقة" }
+    ];
+
+    let questions = [];
+
+    let gameState = {
+      running: false,
+      playerLane: 1,
+      playerZ: 0,
+      targetLane: 1,
+      speed: 0.15,
+      score: 0,
+      currentQuestion: 0,
+      checkpoint: 0,
+      difficulty: 'normal',
+      canMove: true,
+      movementStartTime: 0,
+      movementTime: 7000
+    };
+
+    const difficultySettings = {
+      easy: { movementTime: 7000, speed: 0.12, questions: easyQuestions },
+      normal: { movementTime: 5000, speed: 0.15, questions: normalQuestions },
+      hard: { movementTime: 3000, speed: 0.2, questions: hardQuestions },
+      impossible: { movementTime: 3000, speed: 0.25, questions: impossibleQuestions }
+    };
+
+    let keyState = { left: false, right: false };
+
+    document.addEventListener('keydown', (e) => {
+      if (!gameState.running || !gameState.canMove) return;
+      
+      if (e.key === 'ArrowLeft' && !keyState.left) {
+        keyState.left = true;
+        if (gameState.playerLane < 2) {
+          gameState.playerLane++;
+          gameState.targetLane = gameState.playerLane;
+        }
+      } else if (e.key === 'ArrowRight' && !keyState.right) {
+        keyState.right = true;
+        if (gameState.playerLane > 0) {
+          gameState.playerLane--;
+          gameState.targetLane = gameState.playerLane;
+        }
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft') keyState.left = false;
+      if (e.key === 'ArrowRight') keyState.right = false;
+    });
+
+    let touchStartX = 0;
+    let isTouching = false;
+    let currentTouchX = 0;
+    
+    document.addEventListener('touchstart', (e) => {
+      if (!gameState.running || !gameState.canMove) return;
+      touchStartX = e.touches[0].clientX;
+      currentTouchX = touchStartX;
+      isTouching = true;
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!gameState.running || !gameState.canMove || !isTouching) return;
+      e.preventDefault();
+      
+      currentTouchX = e.touches[0].clientX;
+      const diff = currentTouchX - touchStartX;
+      const screenWidth = window.innerWidth;
+      const laneWidth = screenWidth / 3;
+      
+      // حساب المسار بناءً على موقع اللمس الحالي
+      if (diff > laneWidth / 2 && gameState.targetLane < 2) {
+        gameState.targetLane = Math.min(2, gameState.targetLane + 1);
+        touchStartX = currentTouchX;
+      } else if (diff < -laneWidth / 2 && gameState.targetLane > 0) {
+        gameState.targetLane = Math.max(0, gameState.targetLane - 1);
+        touchStartX = currentTouchX;
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchend', (e) => {
+      isTouching = false;
+      if (!gameState.running || !gameState.canMove) return;
+      gameState.playerLane = gameState.targetLane;
+    });
+
+    document.getElementById('profileButton').addEventListener('click', () => {
+      if (allPlayersData.length === 0) {
+        showCreateProfile();
+      } else {
+        showProfile();
+      }
+    });
+
+    function showCreateProfile() {
+      const profileScreen = document.getElementById('profileScreen');
+      const profileName = document.getElementById('profileName');
+      const startScreen = document.getElementById('startScreen');
+      
+      profileName.textContent = "أدخل اسمك";
+      
+      const inputContainer = document.createElement('div');
+      inputContainer.style.cssText = 'margin: 20px 0; text-align: center;';
+      
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = 'اسمك هنا';
+      nameInput.style.cssText = 'padding: 15px; font-size: 24px; border-radius: 10px; border: 2px solid #667eea; width: 80%; text-align: center; font-family: Tajawal, sans-serif;';
+      
+      const submitBtn = document.createElement('button');
+      submitBtn.textContent = 'إنشاء ملف';
+      submitBtn.className = 'game-button';
+      submitBtn.style.cssText = 'margin-top: 20px; width: 80%;';
+      
+      submitBtn.addEventListener('click', () => {
+        if (nameInput.value.trim().length >= 2) {
+          createPlayerProfile(nameInput.value.trim());
+          inputContainer.remove();
+        }
+      });
+      
+      inputContainer.appendChild(nameInput);
+      inputContainer.appendChild(submitBtn);
+      
+      document.querySelector('.profile-container').insertBefore(
+        inputContainer,
+        document.getElementById('backFromProfile')
+      );
+      
+      startScreen.classList.add('hidden');
+      profileScreen.classList.remove('hidden');
+    }
+
+    async function createPlayerProfile(name) {
+      const newPlayer = {
+        player_name: name,
+        easy_losses: 0,
+        normal_losses: 0,
+        hard_losses: 0,
+        impossible_losses: 0,
+        easy_score: 0,
+        normal_score: 0,
+        hard_score: 0,
+        impossible_score: 0,
+        created_at: new Date().toISOString()
+      };
+      
+      const result = await window.dataSdk.create(newPlayer);
+      if (result.isOk) {
+        setTimeout(() => {
+          showProfile();
+        }, 500);
+      }
+    }
+    
+    document.getElementById('backFromProfile').addEventListener('click', () => {
+      document.getElementById('profileScreen').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+    });
+
+    function showProfile() {
+      if (allPlayersData.length === 0) return;
+      
+      currentPlayerData = allPlayersData[allPlayersData.length - 1];
+      updateProfileDisplay();
+      
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('profileScreen').classList.remove('hidden');
+    }
+
+    function updateProfileDisplay() {
+      if (!currentPlayerData) return;
+      
+      document.getElementById('profileName').textContent = currentPlayerData.player_name;
+      document.getElementById('easyLosses').textContent = currentPlayerData.easy_losses || 0;
+      document.getElementById('normalLosses').textContent = currentPlayerData.normal_losses || 0;
+      document.getElementById('hardLosses').textContent = currentPlayerData.hard_losses || 0;
+      document.getElementById('impossibleLosses').textContent = currentPlayerData.impossible_losses || 0;
+      document.getElementById('easyScore').textContent = currentPlayerData.easy_score || 0;
+      document.getElementById('normalScore').textContent = currentPlayerData.normal_score || 0;
+      document.getElementById('hardScore').textContent = currentPlayerData.hard_score || 0;
+      document.getElementById('impossibleScore').textContent = currentPlayerData.impossible_score || 0;
+    }
+
+    async function updatePlayerStats(isLoss) {
+      if (!currentPlayerData || !currentPlayerData.__backendId) return;
+      
+      const difficulty = gameState.difficulty;
+      
+      if (isLoss) {
+        currentPlayerData[`${difficulty}_losses`] = (currentPlayerData[`${difficulty}_losses`] || 0) + 1;
+      }
+      
+      const currentScore = currentPlayerData[`${difficulty}_score`] || 0;
+      if (gameState.score > currentScore) {
+        currentPlayerData[`${difficulty}_score`] = gameState.score;
+      }
+      
+      await window.dataSdk.update(currentPlayerData);
+    }
+
+    document.getElementById('menuButton').addEventListener('click', () => {
+      const panel = document.getElementById('menuPanel');
+      panel.classList.toggle('show');
+    });
+
+    document.getElementById('menuHome').addEventListener('click', () => {
+      gameState.running = false;
+      document.getElementById('menuPanel').classList.remove('show');
+      document.getElementById('startScreen').classList.remove('hidden');
+      document.getElementById('gameOverScreen').classList.add('hidden');
+      document.getElementById('difficultyScreen').classList.add('hidden');
+      document.getElementById('controlsHint').classList.add('hidden');
+      document.getElementById('menuButton').classList.add('hidden');
+      document.getElementById('levelDisplay').classList.add('hidden');
+      document.getElementById('scoreDisplay').classList.add('hidden');
+      document.getElementById('questionDisplay').classList.remove('show');
+      stopAllMusic();
+      playBgMusic();
+    });
+
+    document.getElementById('menuRestart').addEventListener('click', () => {
+      document.getElementById('menuPanel').classList.remove('show');
+      restartGame();
+    });
+
+    document.getElementById('startButton').addEventListener('click', () => {
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('difficultyScreen').classList.remove('hidden');
+    });
+    
+    document.getElementById('backFromDifficulty').addEventListener('click', () => {
+      document.getElementById('difficultyScreen').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+    });
+    
+    document.getElementById('backFromGameOver').addEventListener('click', () => {
+      document.getElementById('gameOverScreen').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+      document.getElementById('controlsHint').classList.add('hidden');
+      document.getElementById('menuButton').classList.add('hidden');
+      document.getElementById('levelDisplay').classList.add('hidden');
+      document.getElementById('scoreDisplay').classList.add('hidden');
+      document.getElementById('questionDisplay').classList.remove('show');
+      gameState.running = false;
+      stopAllMusic();
+      playBgMusic();
+    });
+
+    document.querySelectorAll('.difficulty-button').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const difficulty = e.currentTarget.dataset.difficulty;
+        startGame(difficulty);
+      });
+    });
+
+    document.getElementById('restartButton').addEventListener('click', restartGame);
+    document.getElementById('continueButton').addEventListener('click', continueFromCheckpoint);
+
+    function shuffleArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    }
+
+    function startGame(difficulty) {
+      if (!scene) initThreeJS();
+      
+      gameState.difficulty = difficulty;
+      const settings = difficultySettings[difficulty];
+      gameState.movementTime = settings.movementTime;
+      gameState.speed = settings.speed;
+      
+      questions = shuffleArray([...settings.questions]);
+      
+      document.getElementById('difficultyScreen').classList.add('hidden');
+      document.getElementById('controlsHint').classList.remove('hidden');
+      document.getElementById('menuButton').classList.remove('hidden');
+      document.getElementById('levelDisplay').classList.remove('hidden');
+      document.getElementById('scoreDisplay').classList.remove('hidden');
+      
+      gameState.running = true;
+      gameState.score = 0;
+      gameState.currentQuestion = 0;
+      gameState.checkpoint = 0;
+      gameState.playerLane = 1;
+      gameState.targetLane = 1;
+      gameState.playerZ = 0;
+      gameState.canMove = true;
+      gameState.movementStartTime = Date.now();
+      
+      if (player) scene.remove(player);
+      createPlayer();
+      
+      updateScore();
+      updateLevel();
+      generateGates();
+      
+      stopAllMusic();
+      playGameMusic();
+      
+      animate();
+    }
+
+    function restartGame() {
+      document.getElementById('gameOverScreen').classList.add('hidden');
+      const settings = difficultySettings[gameState.difficulty];
+      questions = shuffleArray([...settings.questions]);
+      gameState.currentQuestion = 0;
+      gameState.checkpoint = 0;
+      gameState.score = 0;
+      gameState.playerLane = 1;
+      gameState.targetLane = 1;
+      gameState.playerZ = 0;
+      gameState.canMove = true;
+      gameState.running = true;
+      gameState.movementStartTime = Date.now();
+      
+      if (player) scene.remove(player);
+      createPlayer();
+      
+      updateScore();
+      updateLevel();
+      generateGates();
+      
+      stopAllMusic();
+      playGameMusic();
+      
+      animate();
+    }
+
+    function continueFromCheckpoint() {
+      document.getElementById('gameOverScreen').classList.add('hidden');
+      gameState.running = true;
+      gameState.currentQuestion = gameState.checkpoint;
+      gameState.playerLane = 1;
+      gameState.targetLane = 1;
+      gameState.playerZ = 0;
+      gameState.canMove = true;
+      gameState.movementStartTime = Date.now();
+      
+      if (player) scene.remove(player);
+      createPlayer();
+      
+      updateLevel();
+      generateGates();
+      
+      stopAllMusic();
+      playGameMusic();
+      
+      animate();
+    }
+
+    async function gameOver() {
+      gameState.running = false;
+      gameState.canMove = false;
+      
+      stopAllMusic();
+      playWrongSound();
+      
+      await updatePlayerStats(true);
+      
+      const impossibleChallenge = document.getElementById('impossibleChallenge');
+      if (gameState.difficulty === 'impossible') {
+        impossibleChallenge.style.display = 'block';
+      } else {
+        impossibleChallenge.style.display = 'none';
+      }
+      
+      const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+      document.getElementById('jokeContent').textContent = randomJoke;
+      
+      document.getElementById('finalScore').textContent = `النقاط: ${gameState.score}`;
+      document.getElementById('gameOverMessage').textContent = `العودة ��لسؤال ${gameState.checkpoint + 1}`;
+      document.getElementById('continueButton').classList.remove('hidden');
+      document.getElementById('gameOverScreen').classList.remove('hidden');
+      document.getElementById('questionDisplay').classList.remove('show');
+    }
+
+    function showCheckpoint() {
+      const anim = document.getElementById('checkpointAnim');
+      anim.classList.add('show');
+      setTimeout(() => {
+        anim.classList.remove('show');
+      }, 2000);
+    }
+
+    function showCorrectAnimation() {
+      const anim = document.getElementById('correctAnim');
+      anim.classList.add('show');
+      playCorrectSound();
+      setTimeout(() => {
+        anim.classList.remove('show');
+      }, 1000);
+    }
+
+    function generateGates() {
+      if (gameState.currentQuestion >= questions.length) {
+        gameState.running = false;
+        stopAllMusic();
+        document.getElementById('gameOverScreen').classList.remove('hidden');
+        document.getElementById('gameOverMessage').textContent = 'مبروك! خلصت كل الأسئلة! 🎉';
+        document.getElementById('continueButton').classList.add('hidden');
+        updatePlayerStats(false);
+        return;
+      }
+
+      if (gameState.currentQuestion > 0 && gameState.currentQuestion % 5 === 0) {
+        gameState.checkpoint = gameState.currentQuestion;
+        showCheckpoint();
+      }
+
+      const question = questions[gameState.currentQuestion];
+      const answers = [question.c, question.w1, question.w2];
+      
+      for (let i = answers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [answers[i], answers[j]] = [answers[j], answers[i]];
+      }
+      
+      const gateData = [
+        { lane: 0, answer: answers[0], correct: answers[0] === question.c, text: answers[0] },
+        { lane: 1, answer: answers[1], correct: answers[1] === question.c, text: answers[1] },
+        { lane: 2, answer: answers[2], correct: answers[2] === question.c, text: answers[2] }
+      ];
+
+      createGates(gateData);
+      
+      gameState.canMove = true;
+      gameState.movementStartTime = Date.now();
+      
+      document.getElementById('questionDisplay').textContent = question.q;
+      document.getElementById('questionDisplay').classList.add('show');
+    }
+
+    function updateScore() {
+      document.getElementById('scoreDisplay').textContent = `⭐ النقاط: ${gameState.score}`;
+    }
+
+    function updateLevel() {
+      document.getElementById('levelDisplay').textContent = `السؤال: ${gameState.currentQuestion + 1}/${questions.length}`;
+    }
+
+    function animate() {
+      if (!gameState.running) return;
+      
+      requestAnimationFrame(animate);
+      
+      const elapsedTime = Date.now() - gameState.movementStartTime;
+      const progress = Math.min(elapsedTime / gameState.movementTime, 1);
+      gameState.playerZ = progress * 50;
+      
+      if (player) {
+        player.position.z = gameState.playerZ;
+        
+        const targetX = (gameState.targetLane - 1) * 6;
+        player.position.x += (targetX - player.position.x) * 0.15;
+        
+        const time = Date.now() * 0.003;
+        if (player.userData.leftArm) {
+          player.userData.leftArm.rotation.x = Math.sin(time) * 0.5;
+          player.userData.rightArm.rotation.x = Math.sin(time + Math.PI) * 0.5;
+          player.userData.leftLeg.rotation.x = Math.sin(time + Math.PI) * 0.4;
+          player.userData.rightLeg.rotation.x = Math.sin(time) * 0.4;
+        }
+      }
+      
+      camera.position.z = gameState.playerZ - 8;
+      camera.lookAt(0, 2, gameState.playerZ + 5);
+      
+      gateTexts.forEach(sprite => {
+        sprite.lookAt(camera.position);
+      });
+      
+      if (gameState.playerZ >= 48 && gameState.canMove) {
+        const playerGate = gates.find(g => g.lane === gameState.playerLane);
+        
+        if (playerGate) {
+          if (playerGate.correct) {
+            showCorrectAnimation();
+            gameState.score += 10;
+            updateScore();
+            gameState.currentQuestion++;
+            updateLevel();
+            gameState.canMove = false;
+            
+            setTimeout(() => {
+              if (gameState.running) {
+                gameState.playerZ = 0;
+                player.position.z = 0;
+                camera.position.z = -8;
+                generateGates();
+              }
+            }, 200);
+          } else {
+            gameOver();
+          }
+        }
+      }
+      
+      renderer.render(scene, camera);
+    }
+
+    onConfigChange(config);
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a7ed997f379b6c4',t:'MTc2NDcyMDcyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
